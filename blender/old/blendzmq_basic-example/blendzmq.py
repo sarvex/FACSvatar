@@ -47,7 +47,7 @@ class SOCKET_OT_connect_subscriber(bpy.types.Operator):
         self.socket = self.ctx.socket(zmq.SUB)
         self.socket.connect(self.url)  # subscriber connects to publisher
         self.socket.setsockopt(zmq.SUBSCRIBE, ''.encode('ascii'))
-        print("Sub bound to: {}\nWaiting for data...".format(self.url))
+        print(f"Sub bound to: {self.url}\nWaiting for data...")
 
         # poller socket for checking server replies (synchronous)
         self.poller = zmq.Poller()
@@ -64,7 +64,7 @@ class SOCKET_OT_connect_subscriber(bpy.types.Operator):
         if self.socket in sockets:
             # get the message
             topic, msg = self.socket.recv_multipart()
-            print("On topic {}, received data: {}".format(topic, msg))
+            print(f"On topic {topic}, received data: {msg}")
             # context stays the same as when started?
             # self.socket_settings.msg_received = msg.decode('utf-8')
 

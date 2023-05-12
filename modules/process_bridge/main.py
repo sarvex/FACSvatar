@@ -59,7 +59,7 @@ class FACSvatarMessages(FACSvatarZeroMQ):
     def gaze_to_au(self, au_dict, gaze):
         # eye gaze in message as AU
         eye_angle = [gaze['gaze_angle_x'], gaze['gaze_angle_y']]  # radians
-        print("Gaze: {}".format(eye_angle))
+        print(f"Gaze: {eye_angle}")
         # eyes go about 60 degree, which is 1.0472 rad, so no conversion needed?
 
         # set all to 0 (otherwise smoothing problems)
@@ -81,10 +81,10 @@ class FACSvatarMessages(FACSvatarZeroMQ):
         # eye_angle_y down
         else:
             au_dict['AU64'] = min(eye_angle[1] * -1, 1.0)
-            
+
         return au_dict
 
-    async def pub_sub_function(self, apply_function):  # async
+    async def pub_sub_function(self, apply_function):    # async
         """Subscribes to FACS data, smooths, publishes it"""
 
         new_smooth_object = False
@@ -97,7 +97,7 @@ class FACSvatarMessages(FACSvatarZeroMQ):
             while True:
                 # msg = await self.sub_socket.recv_multipart()
                 key, timestamp, data = await self.sub_socket.sub()
-                logging.debug("Received message: {}".format([key, timestamp, data]))
+                logging.debug(f"Received message: {[key, timestamp, data]}")
 
                 # check not finished; timestamp is empty (b'')
                 if timestamp:
@@ -116,14 +116,14 @@ class FACSvatarMessages(FACSvatarZeroMQ):
                                 self.smooth_obj_dict[key] = SmoothData()
                                 new_smooth_object = True
 
-                            logging.debug("TIME: smooth class init: {}".format((time_hns() - time_now) / 1000000))
+                            logging.debug(f"TIME: smooth class init: {(time_hns() - time_now) / 1000000}")
                             time_now = time_hns()
 
                             # check au dict in data and not empty
                             if "au_r" in data and data['au_r']:
                                 # logging.debug(f"TIME: Convert gaze to AU: {(time.time_ns() - time_now) / 1000000}")
                                 # time_now = time.time_ns()
-                            
+
                                 # sort dict; dicts keep insert order Python 3.6+
                                 # au_r_dict = data['au_r']
                                 data['au_r'] = dict(sorted(data['au_r'].items(), key=lambda k: k[0]))
@@ -141,7 +141,7 @@ class FACSvatarMessages(FACSvatarZeroMQ):
                                                                                                   window_size=3,
                                                                                                   steep=.25)
 
-                                logging.debug("TIME: Smooth AU: {}".format((time_hns() - time_now) / 1000000))
+                                logging.debug(f"TIME: Smooth AU: {(time_hns() - time_now) / 1000000}")
                                 time_now = time_hns()
 
                             # check head rotation dict in data and not empty
@@ -153,15 +153,14 @@ class FACSvatarMessages(FACSvatarZeroMQ):
                                                                                                   window_size=6,
                                                                                                   steep=.15)
 
-                                logging.debug("TIME: Smooth head pose: {}".format((time_hns() - time_now) / 1000000))
-                                # time_now = time.time()
+                                logging.debug(f"TIME: Smooth head pose: {(time_hns() - time_now) / 1000000}")
+                                                        # time_now = time.time()
 
                         else:
                             logging.debug("No smoothing applied, forwarding unchanged")
                             # remove topic from dict when msgs finish
                             removed_topic = self.smooth_obj_dict.pop(key, None)
-                            logging.debug("Removing topic from smooth_obj_dict: {}"
-                                          .format(removed_topic))
+                            logging.debug(f"Removing topic from smooth_obj_dict: {removed_topic}")
 
                         # convert gaze into AU 61, 62, 63, 64
                         if "gaze" in data:
@@ -170,16 +169,15 @@ class FACSvatarMessages(FACSvatarZeroMQ):
                             data.pop('gaze')
 
                         # send modified message
-                        logging.debug("TIME: Smoothed data: {}".format(data))
+                        logging.debug(f"TIME: Smoothed data: {data}")
                         logging.info(data)
                         await self.pub_socket.pub(data, key)
 
-                # send message we're done
                 else:
                     print("No more messages to pass; finished")
                     await self.pub_socket.pub(b'', key)
 
-                logging.debug("TIME: Total bridge: {}".format((time_hns() - time_now) / 1000000))
+                logging.debug(f"TIME: Total bridge: {(time_hns() - time_now) / 1000000}")
 
         except:
             print("Error with sub")
@@ -194,7 +192,9 @@ class FACSvatarMessages(FACSvatarZeroMQ):
         while True:
             try:
                 [id_dealer, key, data] = await self.rout_socket.recv_multipart()
-                print("Command received from '{}', with key '{}' and msg '{}'".format(id_dealer, key, data))
+                print(
+                    f"Command received from '{id_dealer}', with key '{key}' and msg '{data}'"
+                )
 
                 tp = key.decode('ascii')
                 # set multiplier parameters
@@ -216,7 +216,7 @@ class FACSvatarMessages(FACSvatarZeroMQ):
 
         # list to numpy array
         au_multiplier_np = np.array(au_multiplier_list)
-        print("New multiplier: {}".format(au_multiplier_np))
+        print(f"New multiplier: {au_multiplier_np}")
 
         # set new multiplier
         for key, obj in self.smooth_obj_dict.items():
@@ -252,8 +252,8 @@ if __name__ == '__main__':
                         help="True: socket.bind() / False: socket.connect(); Default: True")
 
     args, leftovers = parser.parse_known_args()
-    print("The following arguments are used: {}".format(args))
-    print("The following arguments are ignored: {}\n".format(leftovers))
+    print(f"The following arguments are used: {args}")
+    print(f"The following arguments are ignored: {leftovers}\n")
 
     # init FACSvatar message class
     facsvatar_messages = FACSvatarMessages(**vars(args))

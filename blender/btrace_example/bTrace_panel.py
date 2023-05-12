@@ -29,27 +29,23 @@ class addTracerObjectPanel(Panel):
             if Btrace.mmColors == 'CUSTOM':
                 row = box.row(align=True)
                 for i in range(1, 9):
-                    row.prop(Btrace, "mmColor" + str(i), text="")
-            # Show Earth Colors
+                    row.prop(Btrace, f"mmColor{str(i)}", text="")
             elif Btrace.mmColors == 'BW':
                 row = box.row(align=True)
                 row.prop(Btrace, "bwColor1", text="")
                 row.prop(Btrace, "bwColor2", text="")
-            # Show Earth Colors
             elif Btrace.mmColors == 'BRIGHT':
                 row = box.row(align=True)
                 for i in range(1, 5):
-                    row.prop(Btrace, "brightColor" + str(i), text="")
-            # Show Earth Colors
+                    row.prop(Btrace, f"brightColor{str(i)}", text="")
             elif Btrace.mmColors == 'EARTH':
                 row = box.row(align=True)
                 for i in range(1, 6):
-                    row.prop(Btrace, "earthColor" + str(i), text="")
-            # Show Earth Colors
+                    row.prop(Btrace, f"earthColor{str(i)}", text="")
             elif Btrace.mmColors == 'GREENBLUE':
                 row = box.row(align=True)
                 for i in range(1, 4):
-                    row.prop(Btrace, "greenblueColor" + str(i), text="")
+                    row.prop(Btrace, f"greenblueColor{str(i)}", text="")
             elif Btrace.mmColors == 'RANDOM':
                 row = box.row()
 

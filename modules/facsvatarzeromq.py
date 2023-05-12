@@ -46,14 +46,14 @@ class FACSvatarZeroMQ(abstractmethod(ABC)):
         file_path = Path(module.sys.argv[0]).absolute()
         # print(f"path: {file_path.parts[-2]}\n\n")
         # use module name in logfile
-        logfile = Path(file_path.parent, "logging", "logging_%s.log" % module_id)
+        logfile = Path(file_path.parent, "logging", f"logging_{module_id}.log")
         # make logging dir if not exist
         logfile.parent.mkdir(exist_ok=True)
 
         # set logging level; TODO logger per module / pattern instead of root
         numeric_level = getattr(logging, loglevel.upper(), None)
         if not isinstance(numeric_level, int):
-            raise ValueError('Invalid log level: %s' % loglevel)
+            raise ValueError(f'Invalid log level: {loglevel}')
         logging.basicConfig(level=numeric_level)
         logger = logging.getLogger()
         fh = logging.FileHandler(filename=logfile, mode='w')
@@ -61,8 +61,8 @@ class FACSvatarZeroMQ(abstractmethod(ABC)):
         logger.addHandler(fh)
 
         # get ZeroMQ version
-        logging.info("Current libzmq version is %s" % zmq.zmq_version())
-        logging.info("Current  pyzmq version is %s" % zmq.pyzmq_version())
+        logging.info(f"Current libzmq version is {zmq.zmq_version()}")
+        logging.info(f"Current  pyzmq version is {zmq.pyzmq_version()}")
 
         self.pub_socket = None
         self.sub_socket = None
@@ -144,16 +144,16 @@ class FACSvatarZeroMQ(abstractmethod(ABC)):
         bind: True for bind (only 1 socket can bind to 1 address) or false for connect (many can connect)
         """
 
-        url = "tcp://{}:{}".format(ip, port)
-        logging.info("Creating ZeroMQ context on: {}".format(url))
+        url = f"tcp://{ip}:{port}"
+        logging.info(f"Creating ZeroMQ context on: {url}")
         ctx = Context.instance()
         socket = ctx.socket(socket_type)
         if bind:
             socket.bind(url)
-            logging.info("Bind to {} successful".format(url))
+            logging.info(f"Bind to {url} successful")
         else:
             socket.connect(url)
-            logging.info("Connect to {} successful".format(url))
+            logging.info(f"Connect to {url} successful")
 
         return socket
 
@@ -200,13 +200,13 @@ class FACSvatarSocket:
         self.frame_count = -1
 
         csv_dir = "logging"
-        csv_filename = "timestamps_" + csv_filename
+        csv_filename = f"timestamps_{csv_filename}"
         csv_location = os.path.join(csv_dir, csv_filename)
 
         os.makedirs(csv_dir, exist_ok=True)
 
         # increase file name number if file exist
-        logging.info("Write timestamps to: {}".format(csv_location))
+        logging.info(f"Write timestamps to: {csv_location}")
         # while os.path.exists(csv_location):
         #     csv_location = csv_location[:-5] + str(int(csv_location[-5]) + 1) + csv_location[-4:]
 
@@ -230,10 +230,8 @@ class FACSvatarSocket:
 
         if not key:
             key = self.key
-        else:
-            # check if not yet encoded
-            if not isinstance(key, bytes):
-                key = key.encode('ascii')
+        elif not isinstance(key, bytes):
+            key = key.encode('ascii')
 
         # not b''
         if data:
@@ -256,10 +254,14 @@ class FACSvatarSocket:
 
             # check if in DEBUG mode for logging performance; TODO seperate?
             if logging.getLogger().isEnabledFor(logging.DEBUG):
-                logging.debug("PUB: Time prev msg:\t\t\t{}".format(self.pub_timestamp_old))
-                logging.debug("PUB: Time publishing:\t\t\t{}".format(timestamp))
-                logging.debug("PUB: Difference prev msg nanosec:\t{}".format(timestamp - self.pub_timestamp_old))
-                logging.debug("PUB: Difference prev msg milliseconds:\t{}".format((timestamp - self.pub_timestamp_old) / 1000000))
+                logging.debug(f"PUB: Time prev msg:\t\t\t{self.pub_timestamp_old}")
+                logging.debug(f"PUB: Time publishing:\t\t\t{timestamp}")
+                logging.debug(
+                    f"PUB: Difference prev msg nanosec:\t{timestamp - self.pub_timestamp_old}"
+                )
+                logging.debug(
+                    f"PUB: Difference prev msg milliseconds:\t{(timestamp - self.pub_timestamp_old) / 1000000}"
+                )
 
                 # NOT WORKING due to pub and sub not using same instance of this class
                 # assume module: receive msg sub --> process --> pub when sub_time_received != 0
@@ -271,7 +273,6 @@ class FACSvatarSocket:
 
                 self.pub_timestamp_old = timestamp
 
-        # send message with no timestamp or data
         else:
             logging.info("PUB: Data finished")
             await self.socket.send_multipart([key, b'', b''])
@@ -287,36 +288,30 @@ class FACSvatarSocket:
 
         key, timestamp, data = await self.socket.recv_multipart()
 
-        # not received finish message b''
-        if timestamp:
-            timestamp_decoded = int(timestamp.decode('ascii'))
-
-            # check if in DEBUG mode for logging performance; TODO seperate?
-            if logging.getLogger().isEnabledFor(logging.DEBUG):
-                # self.sub_time_received = self.time_now()
-                self.sub_time_received = time_hns()
-                time_difference = self.sub_time_received - timestamp_decoded
-                logging.debug("SUB: Time data published:\t\t{}\nSUB: Time subscribed data received:\t{}\n"
-                      "SUB: Difference nanoseconds:\t\t{}\nSUB: Difference milliseconds:\t\t{}"
-                      .format(timestamp_decoded, self.sub_time_received, time_difference, time_difference / 1000000))
-
-                self.write_to_csv([timestamp_decoded, self.sub_time_received])
-
-            # byte data
-            if raw:
-                return key, timestamp, data
-            # decode data
-            else:
-                data = data.decode('utf-8')
-                # # check not empty byte string b''
-                # if data:
-                data = json.loads(data)
-
-                return key.decode('ascii'), timestamp_decoded, data
-
-        else:
+        if not timestamp:
             # key, '', ''
             return key.decode('ascii'), timestamp.decode('ascii'), data.decode('utf-8')
+        timestamp_decoded = int(timestamp.decode('ascii'))
+
+            # check if in DEBUG mode for logging performance; TODO seperate?
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
+            # self.sub_time_received = self.time_now()
+            self.sub_time_received = time_hns()
+            time_difference = self.sub_time_received - timestamp_decoded
+            logging.debug(
+                f"SUB: Time data published:\t\t{timestamp_decoded}\nSUB: Time subscribed data received:\t{self.sub_time_received}\nSUB: Difference nanoseconds:\t\t{time_difference}\nSUB: Difference milliseconds:\t\t{time_difference / 1000000}"
+            )
+
+            self.write_to_csv([timestamp_decoded, self.sub_time_received])
+
+        if raw:
+            return key, timestamp, data
+        data = data.decode('utf-8')
+        # # check not empty byte string b''
+        # if data:
+        data = json.loads(data)
+
+        return key.decode('ascii'), timestamp_decoded, data
 
     # TODO check if single key or list
     def sub_topic(self, key=None, unsub_all=False):
@@ -355,16 +350,9 @@ class FACSvatarSocket:
 def time_hns():
     """Return time in 100 nanoseconds (more precise with >= python 3.7)"""
 
-    # Python 3.7 or newer use nanoseconds
-    if (sys.version_info.major == 3 and sys.version_info.minor >= 7) or sys.version_info.major >= 4:
-        # 100 nanoseconds / 0.1 microseconds
-        time_now = int(time.time_ns() / 100)
-    else:
-        # timestamp = int(time.time() * 1000)
-        # timestamp = timestamp.to_bytes((timestamp.bit_length() + 7) // 8, byteorder='big')
-
-        # match 100 nanoseconds / 0.1 microseconds
-        time_now = int(time.time() * 10000000)  # time.time()
-        # time_now = time.time()
-
-    return time_now
+    return (
+        int(time.time_ns() / 100)
+        if (sys.version_info.major == 3 and sys.version_info.minor >= 7)
+        or sys.version_info.major >= 4
+        else int(time.time() * 10000000)
+    )

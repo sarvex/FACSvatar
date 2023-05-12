@@ -73,15 +73,12 @@ class CrawlerCSV:
             print(f"\nFile is given as argument: {csv_arg}")
             csv_message_list = [sorted(self.search_csv(csv_folder_clean, csv_arg, True))]
 
-        # number is given as argument
         else:
             csv_arg = int(csv_arg)
             print(f"Number is given as argument: {csv_arg}")
-            # get all cleaned csv, including new ones
-            csv_all_clean = sorted(self.search_csv(csv_folder_clean, "*", True))
-
-            # files were found
-            if csv_all_clean:
+            if csv_all_clean := sorted(
+                self.search_csv(csv_folder_clean, "*", True)
+            ):
                 print(f"All files found in {csv_folder_clean}")
                 no_files = len(csv_all_clean)
                 for i, csv in enumerate(csv_all_clean):
@@ -97,13 +94,8 @@ class CrawlerCSV:
                     print(csv_message_list)
                     print("\n")
 
-                # return specific file
                 elif csv_arg >= -1:
-                    user_input = None
-
-                    if csv_arg >= 0:
-                        user_input = csv_arg
-
+                    user_input = csv_arg if csv_arg >= 0 else None
                     # let user choose file if no file selected
                     while not isinstance(user_input, int) or not 0 <= user_input < no_files:
                         user_input = input("Please choose file you want to send as messages: ")
@@ -155,7 +147,7 @@ class OpenFaceMessage:
     """OpenFace csv based Dataframe to ZeroMQ message"""
 
     def __init__(self, smooth=True):
-        self.msg = dict()
+        self.msg = {}
         self.smooth = smooth
 
     def set_df(self, df_csv):
@@ -186,18 +178,13 @@ class OpenFaceMessage:
         row = self.df_csv.loc[frame_tracker]
 
         # init a message dict
-        self.msg = dict()
-
-        # get confidence in tracking if exist
-        if 'confidence' in self.df_csv:
-            self.msg['confidence'] = row['confidence']
-        # if no confidence, set it to 1.0
-        else:
-            self.msg['confidence'] = 1.0
-
-        # metadata in message
-        self.msg['frame'] = int(row['frame'])
-        self.msg['timestamp'] = row['timestamp']
+        self.msg = {
+            'confidence': row['confidence']
+            if 'confidence' in self.df_csv
+            else 1.0,
+            'frame': int(row['frame']),
+            'timestamp': row['timestamp'],
+        }
 
         if not self.smooth:
             self.msg['smooth'] = False
@@ -225,18 +212,9 @@ class OpenFaceMessage:
 
     def set_reset_msg(self):
         # init a message dict
-        self.msg = dict()
+        self.msg = {'frame': -1, 'smooth': self.smooth}
 
-        # metadata in message
-        self.msg['frame'] = -1
-        self.msg['smooth'] = self.smooth  # don't smooth these data
-        # self.msg['confidence'] = 2.0
-
-        # au_regression in message
-        au_r = {}
-        # set all AUs to 0
-        for i in range(29):
-            au_r[f"AU{str(i).zfill(2)}"] = 0.0
+        au_r = {f"AU{str(i).zfill(2)}": 0.0 for i in range(29)}
         au_r["AU45"] = 0.0
         # AU03 does not exist
         au_r.pop("AU03")
@@ -291,7 +269,7 @@ class OpenFaceMsgFromCSV:
             if self.reset_frames > 0:
                 # send few empty messages when csv group is done
                 await asyncio.sleep(.5)
-                for i in range(self.reset_frames):
+                for _ in range(self.reset_frames):
                     # self.reset_msg.msg['frame'] += i
                     await asyncio.sleep(.1)
                     yield "reset", timestamp - time_start, json.dumps(self.reset_msg.msg)
@@ -322,7 +300,7 @@ class OpenFaceMsgFromCSV:
 
             if df_csv.shape[0] > df_au_row_count:
                 df_au_row_count = df_csv.shape[0]
-                print("Data rows in data frame: {}".format(df_au_row_count))
+                print(f"Data rows in data frame: {df_au_row_count}")
 
             # create msg object with dataframe info
             ofmsg = OpenFaceMessage(smooth=self.smooth)
@@ -336,7 +314,7 @@ class OpenFaceMsgFromCSV:
         # send all rows of data 1 by 1
         # message preparation before sleep, then return data
         for frame_tracker in range(df_au_row_count):
-            print("FRAME TRACKER: {}".format(frame_tracker))
+            print(f"FRAME TRACKER: {frame_tracker}")
 
             # set message for every data frame
             for ofmsg in ofmsg_list:
@@ -348,7 +326,7 @@ class OpenFaceMsgFromCSV:
             # # Sleep before sending the messages, so processing time has less influence
             # wait until timer time matches timestamp
             time_sleep = time_csv - (time.time() - timer)
-            print("waiting {} seconds before sending next message".format(time_sleep))
+            print(f"waiting {time_sleep} seconds before sending next message")
 
             # don't sleep negative time
             if time_sleep > 0:
@@ -404,10 +382,7 @@ class FACSvatarMessages(FACSvatarZeroMQ):
 # cast argument to bool
 # https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
 def str2bool(v):
-    if v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        return True
+    return v.lower() not in ('no', 'false', 'f', 'n', '0')
 
 
 if __name__ == '__main__':
@@ -447,8 +422,8 @@ if __name__ == '__main__':
                         help="Whether AU and head pose data should be smoothed.")
 
     args, leftovers = parser.parse_known_args()
-    print("The following arguments are used: {}".format(args))
-    print("The following arguments are ignored: {}\n".format(leftovers))
+    print(f"The following arguments are used: {args}")
+    print(f"The following arguments are ignored: {leftovers}\n")
 
     # init FACSvatar message class
     facsvatar_messages = FACSvatarMessages(**vars(args))

@@ -26,13 +26,7 @@ class BlendShapeMsg:
         self.au_to_blendshapes = AUtoBlendShapes(au_folder)
 
     async def facs_to_blendshape(self, au_dict):
-        # au_dict: received facs values in JSON format
-
-        # change facs to blendshapes
-        # TODO if None (should not receive any None prob)
-        blend_dict = self.au_to_blendshapes.output_blendshapes(au_dict)
-
-        return blend_dict
+        return self.au_to_blendshapes.output_blendshapes(au_dict)
 
     # # restructure to frame, timestamp, data={head_pose, blendshape}
     # def structure_dict(self, facs_dict, blend_dict):
@@ -61,7 +55,7 @@ class FACSvatarMessages(FACSvatarZeroMQ):
         while True:
             # msg = await self.sub_socket.recv_multipart()
             key, timestamp, data = await self.sub_socket.sub()
-            print("Received message: {}".format([key, timestamp, data]))
+            print(f"Received message: {[key, timestamp, data]}")
 
             # check not finished; timestamp is empty (b'')
             if timestamp:
@@ -117,8 +111,8 @@ if __name__ == '__main__':
                         help="Name of folder with AU conversion files; Default: au_json")
 
     args, leftovers = parser.parse_known_args()
-    print("The following arguments are used: {}".format(args))
-    print("The following arguments are ignored: {}\n".format(leftovers))
+    print(f"The following arguments are used: {args}")
+    print(f"The following arguments are ignored: {leftovers}\n")
 
     # init FACSvatar message class
     facsvatar_messages = FACSvatarMessages(**vars(args))

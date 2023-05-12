@@ -30,7 +30,7 @@ class Messages(FACSvatarZeroMQ):
         while True:
             # key, timestamp, data = await self.sub_socket.sub()
             msg = await self.sub_socket.socket.recv_multipart()  # raw data
-            print("message received: {}".format(msg))
+            print(f"message received: {msg}")
 
     async def msg_pub(self):
         # keep listening to all published message on topic 'facs'
@@ -68,8 +68,8 @@ if __name__ == '__main__':
                         help="True: socket.bind() / False: socket.connect(); Default: False")
 
     args, leftovers = parser.parse_known_args()
-    print("The following arguments are used: {}".format(args))
-    print("The following arguments are ignored: {}\n".format(leftovers))
+    print(f"The following arguments are used: {args}")
+    print(f"The following arguments are ignored: {leftovers}\n")
 
     # init FACSvatar message class
     messages = Messages(**vars(args))
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     if 'pub_port' in args:
         async_list.append(messages.msg_pub)
 
-    print("Starting functions: {}".format(async_list))
+    print(f"Starting functions: {async_list}")
 
     # start processing messages; give list of functions to call async
     messages.start(async_list)

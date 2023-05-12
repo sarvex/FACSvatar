@@ -28,7 +28,7 @@ class FACSvatarZeroMQ(bpy.types.Operator):
         self.head_movement = head_movement
 
         # init ZeroMQ subscriber
-        url = "tcp://{}:{}".format(address, port)
+        url = f"tcp://{address}:{port}"
         ctx = zmq.Context.instance()
         self.sub = ctx.socket(zmq.SUB)
         self.sub.connect(url)
@@ -92,7 +92,7 @@ class FACSvatarZeroMQ(bpy.types.Operator):
             return {'CANCELLED'}
 
         if event.type == 'TIMER':
-            print("Frame: {}".format(self.frame))
+            print(f"Frame: {self.frame}")
 
             # if self.pause_loop_count >= 5:
             # get ZeroMQ message
@@ -158,7 +158,7 @@ class FACSvatarZeroMQ(bpy.types.Operator):
                             val = msg[2]['blendshapes'][bs]
                             self.mb_body.data.shape_keys.key_blocks[bs].value = val
                             self.mb_body.data.shape_keys.key_blocks[bs] \
-                                .keyframe_insert(data_path="value", frame=self.frame)
+                                    .keyframe_insert(data_path="value", frame=self.frame)
 
                 else:
                     print("No blendshapes data found")
@@ -187,10 +187,10 @@ class FACSvatarZeroMQ(bpy.types.Operator):
                 print("No more messages")
                 return {'CANCELLED'}
 
-            # self.pause_loop_count = 0
+                # self.pause_loop_count = 0
 
-            # else:
-            #     self.pause_loop_count += 1
+                # else:
+                #     self.pause_loop_count += 1
 
         return {'PASS_THROUGH'}
 

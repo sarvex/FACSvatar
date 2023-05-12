@@ -8,11 +8,11 @@ import time
 
 def main(ip="127.0.0.1"):
     # ZMQ connection
-    url = "tcp://{}:5550".format(ip)
+    url = f"tcp://{ip}:5550"
     ctx = zmq.Context()
     socket = ctx.socket(zmq.PUB)
     socket.bind(url)  # publisher connects to subscriber
-    print("Pub connected to: {}\nSending data...".format(url))
+    print(f"Pub connected to: {url}\nSending data...")
 
     i = 0
     topic = 'foo'.encode('ascii')
@@ -22,7 +22,7 @@ def main(ip="127.0.0.1"):
         msg = user_msg.encode('utf-8')
         # publish data
         socket.send_multipart([topic, msg])  # 'test'.format(i)
-        print("On topic {}, send data: {}".format(topic, msg))
+        print(f"On topic {topic}, send data: {msg}")
         # time.sleep(.5)
 
         i += 1

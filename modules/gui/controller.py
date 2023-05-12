@@ -29,11 +29,7 @@ class Controller(FACSvatarZeroMQ):
         # print(dict_au)
 
         # init a message dict
-        msg = dict()
-
-        # metadata in message
-        msg['frame'] = -1
-        msg['timestamp'] = time.time()
+        msg = {'frame': -1, 'timestamp': time.time()}
 
         # au_regression in message as dict
         msg['au_r'] = self.slicedict(dict_config, "AU")
@@ -67,7 +63,7 @@ class Controller(FACSvatarZeroMQ):
                                          ])
 
     def dnn_sub_key_change(self, user):
-        print("Changing sub key of DNN to user: {}".format(user))
+        print(f"Changing sub key of DNN to user: {user}")
         # pub_deepfacs.py
         if self.deal2_socket:
             self.deal2_socket.send_multipart([self.deal2_topic.encode('ascii'),  # topic

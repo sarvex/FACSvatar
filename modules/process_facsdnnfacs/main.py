@@ -122,12 +122,12 @@ class FACSvatarMessages(FACSvatarZeroMQ):
         while True:
             # msg = await self.sub_socket.recv_multipart()
             key, timestamp, data = await self.sub_socket.sub()
-            print("Received message: {}".format([key, timestamp, data]))
+            print(f"Received message: {[key, timestamp, data]}")
 
             # if pub key is specified
             # if self.pub_key:
             #     key = self.pub_key.encode('utf-8')
-            
+
             # key = ("dnn." + key.decode('ascii')).encode('ascii')
             key = "dnn." + key
 
@@ -148,7 +148,9 @@ class FACSvatarMessages(FACSvatarZeroMQ):
         while True:
             try:
                 [id_dealer, topic, data] = await self.rout_socket.recv_multipart()
-                print("\nCommand received from '{}', with topic '{}' and msg '{}'".format(id_dealer, topic, data))
+                print(
+                    f"\nCommand received from '{id_dealer}', with topic '{topic}' and msg '{data}'"
+                )
 
                 # set subscriber key
                 if topic.decode('ascii').startswith("dnn"):
@@ -165,7 +167,7 @@ class FACSvatarMessages(FACSvatarZeroMQ):
 
     # change user for what FACS data to subscribe (p0 or p1); 2 speakers only for now
     async def change_user(self):
-        print("Changing subscription key from: {}".format(self.sub_key))
+        print(f"Changing subscription key from: {self.sub_key}")
         # unsubscribe all keys
         self.sub_socket.setsockopt(zmq.UNSUBSCRIBE, self.sub_key.encode('ascii'))
         # subscribe to new key
@@ -174,11 +176,11 @@ class FACSvatarMessages(FACSvatarZeroMQ):
         elif "p1" in self.sub_key.split("."):
             self.sub_key = self.sub_key.replace(".p1", ".p0")
         self.sub_socket.setsockopt(zmq.SUBSCRIBE, self.sub_key.encode('ascii'))
-        print("Changed subscription key to: {}".format(self.sub_key))
+        print(f"Changed subscription key to: {self.sub_key}")
 
     # change to what FACS data to subscribe
     async def set_subscriber(self, user_key):
-        print("Current subscription key: {}".format(self.sub_key))
+        print(f"Current subscription key: {self.sub_key}")
 
         # get individual topics
         split_key = self.sub_key.split(".")
@@ -202,10 +204,10 @@ class FACSvatarMessages(FACSvatarZeroMQ):
             # set new subscription key
             self.sub_key = ".".join(split_key)
             self.sub_socket.setsockopt(zmq.SUBSCRIBE, self.sub_key.encode('ascii'))
-            print("Changed subscription key to: {}".format(self.sub_key))
+            print(f"Changed subscription key to: {self.sub_key}")
 
         else:
-            print("Already subscribed to user: {}".format(user_key))
+            print(f"Already subscribed to user: {user_key}")
 
 
 if __name__ == '__main__':
@@ -241,8 +243,8 @@ if __name__ == '__main__':
                         help="True: socket.bind() / False: socket.connect(); Default: True")
 
     args, leftovers = parser.parse_known_args()
-    print("The following arguments are used: {}".format(args))
-    print("The following arguments are ignored: {}\n".format(leftovers))
+    print(f"The following arguments are used: {args}")
+    print(f"The following arguments are ignored: {leftovers}\n")
 
     # init FACSvatar message class
     facsvatar_messages = FACSvatarMessages(**vars(args))

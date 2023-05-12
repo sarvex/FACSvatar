@@ -93,7 +93,7 @@ class FACSvatarMessages(FACSvatarZeroMQ):
 
         # when message comes, send message that this person is speaking
         async for msg in self.vad.msg_gen():
-            print("Changing sub key of DNN to user: {}".format(self.misc['user']))
+            print(f"Changing sub key of DNN to user: {self.misc['user']}")
             # pub_deepfacs.py
             if self.deal_socket:
                 self.deal_socket.send_multipart([self.deal_topic.encode('ascii'),  # topic
@@ -135,8 +135,8 @@ if __name__ == '__main__':
                         help="User id of vad")
 
     args, leftovers = parser.parse_known_args()
-    print("The following arguments are used: {}".format(args))
-    print("The following arguments are ignored: {}\n".format(leftovers))
+    print(f"The following arguments are used: {args}")
+    print(f"The following arguments are ignored: {leftovers}\n")
 
     # init FACSvatar message class
     facsvatar_messages = FACSvatarMessages(**vars(args))

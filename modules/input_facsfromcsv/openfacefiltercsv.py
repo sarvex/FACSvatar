@@ -46,8 +46,7 @@ class FilterCSV:
     def clean_columns(self):
         if len(self.col_keep) >= 1:
             # doesn't include AU28_c (lip suck), which has no AU28_r
-            reg = "(frame)|(timestamp)|(confidence)|(success)|{}" \
-                .format("|".join("({})".format(c) for c in self.col_keep))
+            reg = f'(frame)|(timestamp)|(confidence)|(success)|{"|".join(f"({c})" for c in self.col_keep)}'
         else:
             reg = "(frame)|(timestamp)|(confidence)"
         # print("regex col filter: {}".format(reg))
@@ -81,7 +80,7 @@ class FilterCSV:
         :param csv_folder_clean: path to folder with cleaned files
         """
 
-        print("Cleaning: {} and save to {}".format(csv_raw, csv_folder_clean))
+        print(f"Cleaning: {csv_raw} and save to {csv_folder_clean}")
         self.df_csv = pd.read_csv(csv_raw)
 
         # removes space in header, e.g. ' confidence' --> 'confidence'

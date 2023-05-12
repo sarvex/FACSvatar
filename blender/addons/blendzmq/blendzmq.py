@@ -55,7 +55,7 @@ class SOCKET_OT_connect_subscriber(bpy.types.Operator):
         self.socket = self.ctx.socket(zmq.SUB)
         self.socket.connect(self.url)  # subscriber connects to publisher
         self.socket.setsockopt(zmq.SUBSCRIBE, ''.encode('ascii'))
-        print("Sub bound to: {}\nWaiting for msgs...".format(self.url))
+        print(f"Sub bound to: {self.url}\nWaiting for msgs...")
 
         # poller socket for checking server replies (synchronous)
         self.poller = zmq.Poller()
@@ -73,7 +73,7 @@ class SOCKET_OT_connect_subscriber(bpy.types.Operator):
             # get the message
             msg = self.socket.recv_multipart()  # topic, timestamp, msg
             # check not finished; timestamp is empty (b'')
-            print("On topic {}, received data: {}".format(msg[0], msg[2]))
+            print(f"On topic {msg[0]}, received data: {msg[2]}")
             if msg[1]:
                 msg[2] = json.loads(msg[2].decode('utf8'))
                 # context stays the same as when started?
@@ -99,7 +99,7 @@ class SOCKET_OT_connect_subscriber(bpy.types.Operator):
                                 # save as key frames if enabled
                                 if self.socket_settings.keyframing:
                                     mb_model.data.shape_keys.key_blocks[bs] \
-                                        .keyframe_insert(data_path="value", frame=current_frame)
+                                            .keyframe_insert(data_path="value", frame=current_frame)
 
                     else:
                         print("No blendshapes data found")
@@ -117,11 +117,7 @@ class SOCKET_OT_connect_subscriber(bpy.types.Operator):
                         # print(head_bones)
 
                         pose_head = msg[2]['pose']
-                        if self.socket_settings.mirror_head:
-                            mirror_head = -1
-                        else:
-                            mirror_head = 1
-
+                        mirror_head = -1 if self.socket_settings.mirror_head else 1
                         # in case we filter data
                         if 'pose_Rx' in pose_head:
                             self.rotate_head_bones(head_bones, 0, pose_head['pose_Rx'], 1)  # pitch
@@ -143,9 +139,9 @@ class SOCKET_OT_connect_subscriber(bpy.types.Operator):
                 self.socket_settings.msg_received = "No more msgs, awaiting msgs..."
                 # return None
 
-            # move cube
-            # for obj in self.blend_ctx.scene.objects:
-            #     obj.location.x = int(msg.decode('utf-8')) * .1
+                # move cube
+                # for obj in self.blend_ctx.scene.objects:
+                #     obj.location.x = int(msg.decode('utf-8')) * .1
 
         # keep running
         return 0.001

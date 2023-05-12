@@ -28,6 +28,14 @@ bl_info = {
     "wiki_url": "https://github.com/NumesSanguis/FACSvatar",
     "category": "Development"}
 
+# from . blendzmq_props import ZMQSocketProperties
+# importlib.reload(ZMQSocketProperties)
+# from . blendzmq_panel import BLENDZMQ_PT_zmqConnector
+# importlib.reload(BLENDZMQ_PT_zmqConnector)
+
+from . import blendzmq_props
+from . import blendzmq_panel
+from . import blendzmq
 #--------------------------
 # import exporter modules
 #--------------------------
@@ -52,25 +60,13 @@ bl_info = {
 if "bpy" in locals():
     print("reloading .py files")
     import importlib
-    # from . blendzmq_props import ZMQSocketProperties
-    # importlib.reload(ZMQSocketProperties)
-    # from . blendzmq_panel import BLENDZMQ_PT_zmqConnector
-    # importlib.reload(BLENDZMQ_PT_zmqConnector)
-
-    from . import blendzmq_props
     importlib.reload(blendzmq_props)
-    from . import blendzmq_panel
     importlib.reload(blendzmq_panel)
-    from . import blendzmq
     importlib.reload(blendzmq)
     # importlib.reload(ZMQSocketProperties)
 else:
     print("importing .py files")
     import bpy
-    from . import blendzmq_props
-    from . import blendzmq_panel
-    from . import blendzmq
-
 # from . import blendzmq_props
 # from . import blendzmq
 print("hello5")

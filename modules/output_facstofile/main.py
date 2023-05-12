@@ -45,7 +45,7 @@ class MessageToFile:
     def facs_json(self, facs_json):
         print(json.dumps(facs_json, indent=4))
         # save FACS data to JSON
-        with open(Path(self.folderjson, "frame_{}.json".format(self.counter)), 'w') as outfile:
+        with open(Path(self.folderjson, f"frame_{self.counter}.json"), 'w') as outfile:
             json.dump(facs_json, outfile)
         self.counter += 1
 
@@ -61,7 +61,7 @@ class MessageToFile:
         dict_flat = {**data, **pose_dict, **au_dict}
         print(dict_flat)
 
-        with open(Path(self.foldercsv, "{}.csv".format(key)), 'a') as outfile:
+        with open(Path(self.foldercsv, f"{key}.csv"), 'a') as outfile:
             writer = csv.DictWriter(outfile, dict_flat.keys(), delimiter=',')
             if self.counter == 0:
                 writer.writeheader()
@@ -89,7 +89,7 @@ class FACSvatarMessages(FACSvatarZeroMQ):
         # keep listening to all published message on topic 'facs'
         while True:
             key, timestamp, data = await self.sub_socket.sub()
-            print("Received message: {}".format([key, timestamp, data]))
+            print(f"Received message: {[key, timestamp, data]}")
 
             # check not finished; timestamp is empty (b'')
             if timestamp:
@@ -125,8 +125,8 @@ if __name__ == '__main__':
                              "json, csv; Default: json")
 
     args, leftovers = parser.parse_known_args()
-    print("The following arguments are used: {}".format(args))
-    print("The following arguments are ignored: {}\n".format(leftovers))
+    print(f"The following arguments are used: {args}")
+    print(f"The following arguments are ignored: {leftovers}\n")
 
     # init FACSvatar message class
     facsvatar_messages = FACSvatarMessages(**vars(args))

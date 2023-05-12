@@ -61,10 +61,10 @@ class AUtoBlendShapes:
         # add values to new dict; based on manuelbastioni/animationengine.py
         for name, value in json_MB.items():
             if value < 0.5:
-                name = name + "_min"
+                name = f"{name}_min"
                 value = (0.5 - value) * 2
             else:
-                name = name + "_max"
+                name = f"{name}_max"
                 value = (value - 0.5) * 2
 
             # make dict less ugly
@@ -110,7 +110,7 @@ class AUtoBlendShapes:
                             #print(self.blendshape_dict[exp])
 
                 else:
-                    print("No json file found for {}".format(au))
+                    print(f"No json file found for {au}")
 
         # TODO resolve _min _max (only 1 can have value, so subtract from each other)
 
@@ -121,7 +121,7 @@ class AUtoBlendShapes:
 
     # iterate over AU data extracted by OpenFace
     def output_blendshapes(self, facs_dict):
-        print("Frame: {}".format(self.frame_tracker))
+        print(f"Frame: {self.frame_tracker}")
         self.calc_blendshapes(facs_dict)  # next(self.df_au.itertuples())
         self.frame_tracker += 1
 

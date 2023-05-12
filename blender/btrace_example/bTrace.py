@@ -46,7 +46,7 @@ class SelectionOrder(bpy.types.Operator):
     num_selected = 0
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return bpy.context.mode == 'OBJECT'
 
     def update(self, context):
@@ -89,10 +89,10 @@ class SelectionOrder(bpy.types.Operator):
 
 def error_handlers(self, op_name, error, reports="ERROR", func=False):
     if self and reports:
-        self.report({'WARNING'}, reports + " (See Console for more info)")
+        self.report({'WARNING'}, f"{reports} (See Console for more info)")
 
     is_func = "Function" if func else "Operator"
-    print("\n[Btrace]\n{}: {}\nError: {}\n".format(op_name, is_func, error))
+    print(f"\n[Btrace]\n{op_name}: {is_func}\nError: {error}\n")
 
 
 # Object Trace
@@ -121,10 +121,9 @@ class OBJECT_OT_objecttrace(Operator):
                 bpy.ops.object.duplicate_move()
                 brushObj = context.selected_objects
             # Join Mesh
-            if Btrace.convert_joinbefore:
-                if len(brushObj) > 1:  # Only run if multiple objects selected
-                    bpy.ops.object.join()
-                    brushObj = context.selected_objects
+            if Btrace.convert_joinbefore and len(brushObj) > 1:
+                bpy.ops.object.join()
+                brushObj = context.selected_objects
 
             for i in brushObj:
                 context.view_layer.objects.active = i
@@ -182,9 +181,7 @@ class OBJECT_OT_objectconnect(Operator):
             # check if respect order is checked, create list of objects
             if Btrace.respect_order is True:
                 selobnames = selection_utils.selected
-                obnames = []
-                for ob in selobnames:
-                    obnames.append(bpy.data.objects[ob])
+                obnames = [bpy.data.objects[ob] for ob in selobnames]
             else:
                 obnames = bpy.context.selected_objects  # No selection order
 
@@ -233,19 +230,19 @@ class OBJECT_OT_objectconnect(Operator):
             # Materials
             check_materials = True
             trace_mats = addtracemat(bpy.context.object.data)
-            if not trace_mats and check_materials is True:
+            if not trace_mats and check_materials:
                 check_materials = False
 
             if Btrace.animate:   # Add Curve Grow it?
                 bpy.ops.curve.btgrow()
 
             bpy.data.collections["Btrace"].objects.link(curve) # add to Btrace collection
-            
+
             # Check if we add grow curve
             if Btrace.animate:
                 bpy.ops.curve.btgrow()  # Add grow curve
 
-            if check_materials is False:
+            if not check_materials:
                 self.report({'WARNING'}, "Some Materials could not be added")
 
             return {'FINISHED'}
@@ -487,7 +484,7 @@ class OBJECT_OT_writing(Operator):
 
             Btrace = context.window_manager.curve_tracer
             # this is hacky - store objects in the scene for comparison later
-            store_objects = [ob for ob in context.scene.objects]
+            store_objects = list(context.scene.objects)
 
             gactive = context.active_object
             # checking if there are any strokes the easy way
@@ -516,22 +513,14 @@ class OBJECT_OT_writing(Operator):
             gactiveCurve.data.bevel_depth = Btrace.curve_depth
 
             writeObj = context.selected_objects
-            if Btrace.animate:
-                for i in writeObj:
-                    context.view_layer.objects.active = i
+            for i in writeObj:
+                context.view_layer.objects.active = i
+                if Btrace.animate:
                     bpy.ops.curve.btgrow()
-                    # Materials
-                    trace_mats = addtracemat(bpy.context.object.data)
-                    if not trace_mats and check_materials is True:
-                        check_materials = False
-            else:
-                for i in writeObj:
-                    context.view_layer.objects.active = i
-                    # Materials
-                    trace_mats = addtracemat(bpy.context.object.data)
-                    if not trace_mats and check_materials is True:
-                        check_materials = False
-
+                # Materials
+                trace_mats = addtracemat(bpy.context.object.data)
+                if not trace_mats and check_materials is True:
+                    check_materials = False
             # Delete grease pencil strokes
             context.view_layer.objects.active = gactive
             bpy.ops.gpencil.data_unlink()
@@ -581,8 +570,7 @@ class OBJECT_OT_convertcurve(Operator):
                 bpy.ops.object.convert(target='CURVE')  # Convert edges to curve
                 bpy.context.object.data.dimensions = '3D'
 
-            # make a continuous edge through all vertices
-            if obj.type == 'MESH':
+            elif obj.type == 'MESH':
                 # Add noise to mesh
                 if Btrace.distort_curve:
                     for v in obj.data.vertices:
@@ -597,13 +585,11 @@ class OBJECT_OT_convertcurve(Operator):
                     bpy.ops.mesh.select_all(action='DESELECT')
                     verts = bpy.context.object.data.vertices
                     bpy.ops.object.mode_set(mode='OBJECT')
-                    li = []
                     p1 = rand_randint(0, len(verts) - 1)
 
-                    for v in verts:
-                        li.append(v.index)
+                    li = [v.index for v in verts]
                     li.remove(p1)
-                    for z in range(len(li)):
+                    for _ in range(len(li)):
                         x = []
                         for px in li:
                             d = verts[p1].co - verts[px].co  # find distance from first vert
@@ -621,7 +607,7 @@ class OBJECT_OT_convertcurve(Operator):
                     bpy.ops.object.mode_set(mode='OBJECT')
                     bpy.ops.object.convert(target='CURVE')
 
-                if Btrace.convert_edgetype == 'EDGEALL':
+                elif Btrace.convert_edgetype == 'EDGEALL':
                     # Start All edges
                     bpy.ops.object.mode_set(mode='EDIT')
                     bpy.ops.mesh.select_all(action='SELECT')
@@ -704,9 +690,7 @@ class OBJECT_OT_meshfollow(Operator):
                 sel = []
                 # options are 'random', 'custom', 'all'
                 seloption, fol_mesh_type = Btrace.fol_sel_option, Btrace.fol_mesh_type
-                if fol_mesh_type == 'OBJECT':
-                    pass
-                else:
+                if fol_mesh_type != 'OBJECT':
                     if seloption == 'CUSTOM':
                         for i in meshobjs:
                             if i.select_get() is True:
@@ -813,7 +797,7 @@ class OBJECT_OT_meshfollow(Operator):
                 if curveobject.type == 'CURVE':
                     curveobject.select_set(True)
                     bpy.context.view_layer.objects.active = curveobject
-                    
+
                     bpy.data.collections["Btrace"].objects.link(curveobject) #2.8 link obj to collection
                     bpy.context.scene.collection.objects.unlink(curveobject) # unlink from scene collection
                     # bpy.ops.object.group_link(group="Btrace")
@@ -859,12 +843,6 @@ def addtracemat(matobj):
             if not Btrace.mat_run_color_blender:
                 # Create Random color for each item
                 if Btrace.trace_mat_random:
-                    # Use random color from chosen palette,
-                    # assign color lists for each palette
-                    brightColors = [
-                            Btrace.brightColor1, Btrace.brightColor2,
-                            Btrace.brightColor3, Btrace.brightColor4
-                            ]
                     bwColors = [
                             Btrace.bwColor1, Btrace.bwColor2
                             ]
@@ -883,40 +861,46 @@ def addtracemat(matobj):
                             Btrace.greenblueColor3
                             ]
                     if Btrace.mmColors == 'BRIGHT':
+                        # Use random color from chosen palette,
+                        # assign color lists for each palette
+                        brightColors = [
+                                Btrace.brightColor1, Btrace.brightColor2,
+                                Btrace.brightColor3, Btrace.brightColor4
+                                ]
                         mat_color = brightColors[
                                         rand_randint(0, len(brightColors) - 1)
                                         ]
-                    if Btrace.mmColors == 'BW':
+                    elif Btrace.mmColors == 'BW':
                         mat_color = bwColors[
                                         rand_randint(0, len(bwColors) - 1)
                                         ]
-                    if Btrace.mmColors == 'CUSTOM':
+                    elif Btrace.mmColors == 'CUSTOM':
                         mat_color = customColors[
                                         rand_randint(0, len(customColors) - 1)
                                         ]
-                    if Btrace.mmColors == 'EARTH':
+                    elif Btrace.mmColors == 'EARTH':
                         mat_color = earthColors[
                                         rand_randint(0, len(earthColors) - 1)
                                         ]
-                    if Btrace.mmColors == 'GREENBLUE':
+                    elif Btrace.mmColors == 'GREENBLUE':
                         mat_color = greenblueColors[
                                         rand_randint(0, len(greenblueColors) - 1)
                                         ]
-                    if Btrace.mmColors == 'RANDOM':
+                    elif Btrace.mmColors == 'RANDOM':
                         mat_color = (rand_random(), rand_random(), rand_random())
                 else:
                     # Choose Single color
                     mat_color = Btrace.trace_mat_color
 
                 TraceMat = bpy.data.materials.new('TraceMat')
-                
-                TraceMat.use_nodes = True 
+
+                TraceMat.use_nodes = True
                 BSDF = TraceMat.node_tree.nodes[1]
                 r, g, b = mat_color[0], mat_color[1], mat_color[2]
                 BSDF.inputs[0].default_value = [r, g, b, 1] # change node color
                 TraceMat.diffuse_color = [r, g, b, 1] # change viewport color
-                
-               
+
+
                 # Add material to object
                 matobj.materials.append(bpy.data.materials.get(TraceMat.name))
 
@@ -971,7 +955,7 @@ class OBJECT_OT_materialChango(Operator):
                 theObj = i
                 # Check to see if object has materials
                 checkMaterials = len(theObj.data.materials)
-                if engine == 'CYCLES' or engine == 'BLENDER_EEVEE':
+                if engine in ['CYCLES', 'BLENDER_EEVEE']:
                     materialName = "colorblendMaterial"
                     madMat = bpy.data.materials.new(materialName)
                     madMat.use_nodes = True
@@ -985,8 +969,6 @@ class OBJECT_OT_materialChango(Operator):
                         materialName = "colorblendMaterial"
                         madMat = bpy.data.materials.new(materialName)
                         theObj.data.materials.append(madMat)
-                    else:
-                        pass  # pass since we have what we need
                     # assign the first material of the object to "mat"
                     madMat = theObj.data.materials[0]
 
@@ -996,7 +978,7 @@ class OBJECT_OT_materialChango(Operator):
                 # Random material function
                 def colorblenderRandom():
                     randomRGB = (rand_random(), rand_random(), rand_random(), 1)
-                    if engine == 'CYCLES' or engine == 'BLENDER_EEVEE':
+                    if engine in ['CYCLES', 'BLENDER_EEVEE']:
                         Principled_BSDF = madMat.node_tree.nodes[1]
                         mat_color = randomRGB
                         r, g, b = mat_color[0], mat_color[1], mat_color[2]
@@ -1006,7 +988,7 @@ class OBJECT_OT_materialChango(Operator):
                         madMat.diffuse_color = randomRGB
 
                 def colorblenderCustom():
-                    if engine == 'CYCLES' or engine == 'BLENDER_EEVEE':
+                    if engine in ['CYCLES', 'BLENDER_EEVEE']:
                         Principled_BSDF = madMat.node_tree.nodes[1]
                         mat_color = rand_choice(customColors)
                         r, g, b = mat_color[0], mat_color[1], mat_color[2]
@@ -1017,7 +999,7 @@ class OBJECT_OT_materialChango(Operator):
 
                 # Black and white color
                 def colorblenderBW():
-                    if engine == 'CYCLES' or engine == 'BLENDER_EEVEE':
+                    if engine in ['CYCLES', 'BLENDER_EEVEE']:
                         Principled_BSDF = madMat.node_tree.nodes[1]
                         mat_color = rand_choice(bwColors)
                         r, g, b = mat_color[0], mat_color[1], mat_color[2]
@@ -1028,7 +1010,7 @@ class OBJECT_OT_materialChango(Operator):
 
                 # Bright colors
                 def colorblenderBright():
-                    if engine == 'CYCLES' or engine == 'BLENDER_EEVEE':
+                    if engine in ['CYCLES', 'BLENDER_EEVEE']:
                         Principled_BSDF = madMat.node_tree.nodes[1]
                         mat_color = rand_choice(brightColors)
                         r, g, b = mat_color[0], mat_color[1], mat_color[2]
@@ -1039,7 +1021,7 @@ class OBJECT_OT_materialChango(Operator):
 
                 # Earth Tones
                 def colorblenderEarth():
-                    if engine == 'CYCLES' or engine == 'BLENDER_EEVEE':
+                    if engine in ['CYCLES', 'BLENDER_EEVEE']:
                         Principled_BSDF = madMat.node_tree.nodes[1]
                         mat_color = rand_choice(earthColors)
                         r, g, b = mat_color[0], mat_color[1], mat_color[2]
@@ -1050,7 +1032,7 @@ class OBJECT_OT_materialChango(Operator):
 
                 # Green to Blue Tones
                 def colorblenderGreenBlue():
-                    if engine == 'CYCLES' or engine == 'BLENDER_EEVEE':
+                    if engine in ['CYCLES', 'BLENDER_EEVEE']:
                         Principled_BSDF = madMat.node_tree.nodes[1]
                         mat_color = rand_choice(greenblueColors)
                         r, g, b = mat_color[0], mat_color[1], mat_color[2]
@@ -1081,11 +1063,8 @@ class OBJECT_OT_materialChango(Operator):
                         colorblenderEarth()
                     elif Btrace.mmColors == 'GREENBLUE':
                         colorblenderGreenBlue()
-                    else:
-                        pass
-
                     # Add keyframe to material
-                    if engine == 'CYCLES' or engine == 'BLENDER_EEVEE':
+                    if engine in ['CYCLES', 'BLENDER_EEVEE']:
                         madMat.node_tree.nodes[
                                 1].inputs[0].keyframe_insert('default_value')
                         # not sure if this is need, it's viewport color only
@@ -1132,7 +1111,7 @@ class OBJECT_OT_clearColorblender(Operator):
                 while start <= (end + 100):
                     context.scene.frame_set(frame=start)
                     try:
-                        if engine == 'CYCLES' or engine == 'BLENDER_EEVEE':
+                        if engine in ['CYCLES', 'BLENDER_EEVEE']:
                             matCl.node_tree.nodes[
                                 1].inputs[0].keyframe_delete('default_value')
                         elif engine == 'BLENDER_RENDER':
@@ -1167,18 +1146,9 @@ class OBJECT_OT_fcnoise(Operator):
             timescale = Btrace.fcnoise_timescale
             addkeyframe = Btrace.fcnoise_key
 
-            # This sets properties for Loc, Rot and Scale
-            # if they're checked in the Tools window
-            noise_rot = 'rotation'
-            noise_loc = 'location'
-            noise_scale = 'scale'
-            if not Btrace.fcnoise_rot:
-                noise_rot = 'none'
-            if not Btrace.fcnoise_loc:
-                noise_loc = 'none'
-            if not Btrace.fcnoise_scale:
-                noise_scale = 'none'
-
+            noise_rot = 'none' if not Btrace.fcnoise_rot else 'rotation'
+            noise_loc = 'none' if not Btrace.fcnoise_loc else 'location'
+            noise_scale = 'none' if not Btrace.fcnoise_scale else 'scale'
             # Add settings from panel for type of keyframes
             types = noise_loc, noise_rot, noise_scale
             amplitude = amp

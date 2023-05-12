@@ -69,7 +69,7 @@ class FACSvatarMessages(FACSvatarZeroMQ):
         while True:
             # msg = await self.sub_socket.recv_multipart()
             key, timestamp, data = await self.sub_socket.sub()
-            print("Received message: {}".format([key, timestamp, data]))
+            print(f"Received message: {[key, timestamp, data]}")
 
             # check not finished; timestamp is empty (b'')
             if timestamp:
@@ -138,8 +138,8 @@ if __name__ == '__main__':
                         help="Whether head pose should also be filtered")
 
     args, leftovers = parser.parse_known_args()
-    print("The following arguments are used: {}".format(args))
-    print("The following arguments are ignored: {}\n".format(leftovers))
+    print(f"The following arguments are used: {args}")
+    print(f"The following arguments are ignored: {leftovers}\n")
 
     # init FACSvatar message class
     facsvatar_messages = FACSvatarMessages(**vars(args))

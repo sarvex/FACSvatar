@@ -148,7 +148,7 @@ class HelloButton(bpy.types.Panel):  # bpy.types.Operator
         if obj:
             box.label(text=f"Hallo {obj.name}")
         else:
-            box.label(text=f"No object selected :(")
+            box.label(text="No object selected :(")
 
         row = layout.row()
         row.label(text="Add!")

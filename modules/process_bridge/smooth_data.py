@@ -50,8 +50,7 @@ class SmoothData:
         for n, x in enumerate(series):  # reversed()
             numerator += math.exp(-steep * n) * x
             denominator += math.exp(-steep * n)  # TODO calculate once
-        smooth = numerator / denominator
-        return smooth
+        return numerator / denominator
 
     # use window of size 'window_size' data to smooth; window=1 is no smoothing
     def trailing_moving_average(self, data_dict, queue_no, window_size=3, steep=1):
@@ -63,84 +62,86 @@ class SmoothData:
         time_begin = time_hns()
         time_now = time_begin
 
-        # no smoothing
         if window_size <= 1:
             return data_dict
 
-        else:
             # convert dict to pandas dataframe
             # d_series = data_dict  # pd.read_json(data_dict, typ='series')
 
             # create a new queue to store a new type of data when no queue exist yet
-            if len(self.dataframe_list) <= queue_no:
-                # convert series to data frame
-                # d_frame = d_series.to_frame()
-                # use labels as column names; switch index with columns
-                # d_frame = d_frame.transpose()
+        if len(self.dataframe_list) <= queue_no:
+            # convert series to data frame
+            # d_frame = d_series.to_frame()
+            # use labels as column names; switch index with columns
+            # d_frame = d_frame.transpose()
 
-                logging.debug(data_dict)
-                d_frame = pd.DataFrame.from_dict(data_dict, orient='index')
-                d_frame = d_frame.transpose()
-                # d_frame = pd.DataFrame.from_dict(list(data_dict.items()))
-                logging.debug(d_frame)
+            logging.debug(data_dict)
+            d_frame = pd.DataFrame.from_dict(data_dict, orient='index')
+            d_frame = d_frame.transpose()
+            # d_frame = pd.DataFrame.from_dict(list(data_dict.items()))
+            logging.debug(d_frame)
 
-                # add calculated denominator as meta-data
-                # d_frame.steep = steep
+            # add calculated denominator as meta-data
+            # d_frame.steep = steep
 
-                logging.debug("Add new queue")
-                self.dataframe_list.append(d_frame)
+            logging.debug("Add new queue")
+            self.dataframe_list.append(d_frame)
 
-                logging.debug("TIME SMOOTH: Dict to pd dataframe: {}".format((time_hns() - time_now) / 1000000))
-                time_now = time_hns()
+            logging.debug(
+                f"TIME SMOOTH: Dict to pd dataframe: {(time_hns() - time_now) / 1000000}"
+            )
+            time_now = time_hns()
 
-                # return data frame in json format
-                return data_dict
+            # return data frame in json format
+            return data_dict
 
-            # use [trail] previous data dicts for moving average
-            else:
-                # transform dict to series
-                d_series = pd.Series(data_dict)
+        else:
+            # transform dict to series
+            d_series = pd.Series(data_dict)
 
-                logging.debug("TIME SMOOTH: Dict to pd series: {}".format((time_hns() - time_now) / 1000000))
-                time_now = time_hns()
+            logging.debug(
+                f"TIME SMOOTH: Dict to pd series: {(time_hns() - time_now) / 1000000}"
+            )
+            time_now = time_hns()
 
-                # get data frame
-                d_frame = self.dataframe_list[queue_no]
+            # get data frame
+            d_frame = self.dataframe_list[queue_no]
 
-                # add data series to data frame at first postion
-                # d_frame = d_frame.append(d_series, ignore_index=True)  # , ignore_index=True
-                d_frame.loc[-1] = d_series  # adding a row
-                d_frame.index = d_frame.index + 1  # shifting index
-                d_frame = d_frame.sort_index()  # sorting by index
+            # add data series to data frame at first postion
+            # d_frame = d_frame.append(d_series, ignore_index=True)  # , ignore_index=True
+            d_frame.loc[-1] = d_series  # adding a row
+            d_frame.index = d_frame.index + 1  # shifting index
+            d_frame = d_frame.sort_index()  # sorting by index
 
-                # drop row when row count longer than trail
-                if d_frame.shape[0] > window_size:
-                    # drop first row (frame)
-                    # d_frame.drop(d_frame.index[0], inplace=True)
-                    # drop last row (oldest frame)
-                    d_frame.drop(d_frame.tail(1).index, inplace=True)
+            # drop row when row count longer than trail
+            if d_frame.shape[0] > window_size:
+                # drop first row (frame)
+                # d_frame.drop(d_frame.index[0], inplace=True)
+                # drop last row (oldest frame)
+                d_frame.drop(d_frame.tail(1).index, inplace=True)
 
-                # put our data frame back for next time
-                self.dataframe_list[queue_no] = d_frame
+            # put our data frame back for next time
+            self.dataframe_list[queue_no] = d_frame
 
-                logging.debug("TIME SMOOTH: Insert pd series into dataframe: {}"
-                              .format((time_hns() - time_now) / 1000000))
-                time_now = time_hns()
+            logging.debug(
+                f"TIME SMOOTH: Insert pd series into dataframe: {(time_hns() - time_now) / 1000000}"
+            )
+            time_now = time_hns()
 
-                # use softmax-like function to smooth
-                smooth_data = d_frame.apply(self.softmax_smooth, args=(steep,))  # axis=1,
+            # use softmax-like function to smooth
+            smooth_data = d_frame.apply(self.softmax_smooth, args=(steep,))  # axis=1,
 
-                logging.debug("TIME SMOOTH: Smooth data: {}".format((time_hns() - time_now) / 1000000))
-                time_now = time_hns()
+            logging.debug(f"TIME SMOOTH: Smooth data: {(time_hns() - time_now) / 1000000}")
+            time_now = time_hns()
 
                 # apply AU multiplier
-                if queue_no == 0:
-                    smooth_data = smooth_data * self.multiplier
+            if queue_no == 0:
+                smooth_data = smooth_data * self.multiplier
 
-                    logging.debug("TIME SMOOTH: Multiplier: {}".format((time_hns() - time_now) / 1000000))
-                    # time_now = time_hns()
+                logging.debug(f"TIME SMOOTH: Multiplier: {(time_hns() - time_now) / 1000000}")
+                            # time_now = time_hns()
 
-                return smooth_data.to_dict()
+            return smooth_data.to_dict()
 
     # def softmax_prep(self, row, steep):
     #     self.n_array = np.arange(1, row.shape[0]+1)
@@ -149,28 +150,7 @@ class SmoothData:
     #     self.denominator = np.exp(-steep * self.n_array)
 
     def softmax_numerator(self, row, n_array, steep=1):
-        # print(f"row: {row}")
-        # row = row.flatten()
-        # print(f"row: {row}")
-        # n_iter = iter()
-        # n_list = np.array(range(row.shape[0]))
-        # print(f"n_list: {n_list}")
-        # n_array = np.arange(1, row.shape[0] + 1)
-        # print(f"n_array: {n_array}")
-
-        # steep_array = np.full(row.shape[0], -steep)
-        # steep_array = n_array * -steep
-        # print(steep_array)
-
-        # math.exp(-steep * n) * x
-        # numerator += math.exp(-steep * n_list) * row
-        # numerator = sum(math.exp(-steep * n_list) * row)
-
-        # numerator = math.exp(steep_array * n_array) # * row
-        numerator = np.sum(np.exp(-steep * n_array) * row)
-        # print(numerator)
-
-        return numerator
+        return np.sum(np.exp(-steep * n_array) * row)
 
     # smoothing function similar to softmax
     def softmax_smooth2(self, arr_2d, steep):
@@ -192,7 +172,9 @@ class SmoothData:
         # smooth_array = np.divide(numerator, denominator)
         smooth_array = numerator / denominator
 
-        logging.debug("\t\tTIME SMOOTH: smooth 2d array: {}".format((time_hns() - time_now) / 1000000))
+        logging.debug(
+            f"\t\tTIME SMOOTH: smooth 2d array: {(time_hns() - time_now) / 1000000}"
+        )
 
         # # sum_0_n(e^(-steepness*n) x_n) / sum_0_n(e^(-steepness*n))
         # numerator = 0
@@ -219,10 +201,7 @@ class SmoothData:
         time_now = time_begin
 
         # no smoothing
-        if window_size <= 1:
-            return data_dict
-
-        else:
+        if window_size > 1:
             logging.debug("Window size bigger than 1")
             # print(data_dict)
             logging.debug(f"len data_dict:{len(data_dict)}")
@@ -230,7 +209,9 @@ class SmoothData:
             # print(array)
             array = np.reshape(array, (-1, len(array)))
 
-            logging.debug("\t\tTIME SMOOTH: dict to array: {}".format((time_hns() - time_now) / 1000000))
+            logging.debug(
+                f"\t\tTIME SMOOTH: dict to array: {(time_hns() - time_now) / 1000000}"
+            )
             time_now = time_hns()
 
             print(array)
@@ -256,11 +237,10 @@ class SmoothData:
                 data_dict = dict(zip(data_dict.keys(), array.flatten()))
                 return data_dict
 
-            # not reached window_size yet
             else:
                 logging.debug("queue exists")
                 smooth_2d_array = self.data_list[queue_no]
-                logging.debug("smooth_2d_array shape: {}".format(smooth_2d_array.shape))
+                logging.debug(f"smooth_2d_array shape: {smooth_2d_array.shape}")
 
                 # matrix not yet window size
                 if self.data_list[queue_no].shape[0] <= window_size:
@@ -281,7 +261,9 @@ class SmoothData:
                 # store for next message
                 self.data_list[queue_no] = smooth_2d_array
 
-                logging.debug("\t\tTIME SMOOTH: stack array: {}".format((time_hns() - time_now) / 1000000))
+                logging.debug(
+                    f"\t\tTIME SMOOTH: stack array: {(time_hns() - time_now) / 1000000}"
+                )
                 time_now = time_hns()
 
             logging.debug("Smooth matrix")
@@ -297,10 +279,10 @@ class SmoothData:
             # values back into dict
             data_dict = dict(zip(data_dict.keys(), data_smoothed))
 
-            logging.debug("\t\tTIME SMOOTH: array to dict: {}\n\n".format((time_hns() - time_now) / 1000000))
-            # time_now = time.time_ns()
-
-            return data_dict
+            logging.debug(
+                f"\t\tTIME SMOOTH: array to dict: {(time_hns() - time_now) / 1000000}\n\n"
+            )
+        return data_dict
 
             # first message
             # if not self.smooth_AU:
